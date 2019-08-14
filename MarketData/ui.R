@@ -30,8 +30,8 @@ shinyUI(fluidPage(
     
     h4("Pick two stocks to compare to the SP500"),
     fixedRow(
-        column(3, selectInput(inputId = "tickerInput1", label = "Stock 1", choices = tickerList, selected = "AAPL")),
-        column(3, selectInput(inputId = "tickerInput2", label = "Stock 2", choices = tickerList, selected = "GOOG"))),
+        column(3, selectInput(inputId = "ticker1", label = "Stock 1", choices = tickerList, selected = "AAPL")),
+        column(3, selectInput(inputId = "ticker2", label = "Stock 2", choices = tickerList, selected = "GOOG"))),
     
     tabsetPanel(type = "tabs",
                 tabPanel("Historical Investment Comparision", 

@@ -14,64 +14,47 @@ library(quantmod)
 library(plotly)
 library(lubridate)
 
-shinyServer(function(input, output) ({
-    # Data request and initail processing 
-    withProgress(message = 'Getting Data... Please Wait', value = 0, {
-        
-        tsnames <- c("Date","Ticker","Open","High","Low","Close","Volume","Adjusted")
-        getSymbols(c("GOOG","AAPL","IBM","^GSPC","MSFT","ORCL"),src='yahoo',warnings=F)
-
-        i = 1
-        incProgress(1/7, detail = paste("Processing Data", i))
-
-        dfs <- data.frame(Date=index(GSPC),Ticker="^GSPC",coredata(GSPC))
-        names(dfs) <- tsnames
-        dfs$Ticker <- "SP500"
-
-        i = i +1
-        incProgress(1/7, detail = paste("Processing Data", i))
-
-        dfg <- data.frame(Date=index(GOOG),Ticker="GOOG",coredata(GOOG))
-        names(dfg) <- tsnames
-        
-        i = i +1
-        incProgress(1/7, detail = paste("Processing Data", i))
-
-        dfi <- data.frame(Date=index(IBM),Ticker="IBM",coredata(IBM))
-        names(dfi) <- tsnames
-        
-        i = i +1
-        incProgress(1/7, detail = paste("Processing Data", i))
-
-        dfa <- data.frame(Date=index(AAPL),Ticker="AAPL",coredata(AAPL))
-        names(dfa) <- tsnames
-        
-        i = i +1
-        incProgress(1/7, detail = paste("Processing Data", i))
-
-        dfm <- data.frame(Date=index(MSFT),Ticker="MSFT",coredata(MSFT))
-        names(dfm) <- tsnames
-
-        i = i +1
-        incProgress(1/7, detail = paste("Processing Data", i))
-
-        dfo <- data.frame(Date=index(ORCL),Ticker="ORCL",coredata(ORCL))
-        names(dfo) <- tsnames
-       
-        dff <- rbind(dfa,dfg,dfi,dfs,dfm,dfo)
-
+shinyServer(function(input, output, session) ({
+    # Data request and initail processing
+    dataset <- reactive({
+        withProgress(message = 'Getting Data... Please Wait', value = 0, {
+            
+            tsnames <- c("Date","Ticker","Open","High","Low","Close","Volume","Adjusted")
+            getSymbols(c(input$ticker1,input$ticker2,"^GSPC"),src='yahoo',warnings=F)
+            
+            i = 1
+            incProgress(1/4, detail = paste("Processing Data", i))
+            
+            dfa <- data.frame(Date=index(get(input$ticker1)), Ticker=input$ticker1, coredata(get(input$ticker1)))
+            names(dfa) <- tsnames
+            
+            i = i +1
+            incProgress(1/4, detail = paste("Processing Data", i))
+            
+            dfg <- data.frame(Date=index(get(input$ticker2)), Ticker=input$ticker2, coredata(get(input$ticker2)))
+            names(dfg) <- tsnames
+            
+            i = i +1
+            incProgress(1/4, detail = paste("Processing Data", i))
+            
+            dfs <- data.frame(Date=index(GSPC),Ticker="SP500",coredata(GSPC))
+            names(dfs) <- tsnames
+            
+            rbind(dfa,dfg,dfs)
+            
+        })
     })
     # Timeseries Plot for selected stocks and SP500 
     output$distPlot <- renderPlotly({
-        withProgress(message = 'Generating Plot', value = 0, {
-            
+        withProgress(message = 'Generating Plot', value = 4, {
+            dff <- dataset()
             p <- dff %>% plot_ly(type = 'scatter', mode = 'lines') %>%
-                add_trace(x=~Date, y=~Close, name=input$tickerInput1,
+                add_trace(x=~Date, y=~Close, name=input$ticker1,
                           line=list(color="green"),
-                          data=dff[dff$Ticker==input$tickerInput1,]) %>%
-                add_trace(x=~Date, y=~Close, name=input$tickerInput2,
+                          data=dff[dff$Ticker==input$ticker1,]) %>%
+                add_trace(x=~Date, y=~Close, name=input$ticker2,
                           line=list(color="lightblue"),
-                          data=dff[dff$Ticker==input$tickerInput2,]) %>%
+                          data=dff[dff$Ticker==input$ticker2,]) %>%
                 add_trace(x=~Date, y=~Close, name="SP500",yaxis = "y2",
                           line=list(color="lightgreen"),
                           data=dff[dff$Ticker=="SP500",]) %>%
@@ -86,7 +69,8 @@ shinyServer(function(input, output) ({
     
     # Table 1 - Profit/Loss for period
     output$table <- shiny::renderDataTable({
-        tic <- c(input$tickerInput1,input$tickerInput2,"SP500")
+        dff <- dataset()
+        tic <- c(input$ticker1,input$ticker2,"SP500")
         wdfs <- dff[dff$Date >=input$dateRange1[1]& dff$Date <=input$dateRange1[2],]
         
         mind <- min(date(wdfs$Date))
@@ -114,8 +98,9 @@ shinyServer(function(input, output) ({
     })
     # Table2 - Market Data for selected stocks and SP500
     output$table2 <- shiny::renderDataTable({
+        dff <- dataset()
         dff[dff$Date >=input$dateRange2[1] & dff$Date <=input$dateRange2[2] & 
-            dff$Ticker %in% c(input$tickerInput1,input$tickerInput2,"SP500"),]
+            dff$Ticker %in% c(input$ticker1,input$ticker2,"SP500"),]
     })
 })
 )
