@@ -87,6 +87,7 @@ htmlwidgets::saveWidget(as_widget(p), file = "plot1.html")
 <div>
 Tab 1 - Historical Investment Comparison
 ========================================================
+class: small-code
 <span style="font-weight:normal; color:blue;">
 This code is extracted from the application and returns the comparison table for the select stocks, date period & investment amount.
 </span>
@@ -160,7 +161,7 @@ knitr::kable(wrk,format = "html",row.names=FALSE)
 
 Tab 2 - Time Series Data
 ========================================================
-
+class: small-code
 ## This code is extracted from the application and returns the time series data for the select stocks and date period  
 
 ```r
