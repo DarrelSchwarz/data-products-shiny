@@ -1,0 +1,136 @@
+<style>
+.reveal h1, .reveal h2, .reveal h3 {
+  word-wrap: normal;
+  -moz-hyphens: none;}
+/* slide titles */
+.reveal h3 {font-size: 60px; font-weight: bold; color: darkblue;}
+
+/* heading for slides with two hashes ## */
+.reveal .slides section .slideContent h2 {
+   font-size: 40px; font-weight: bold; color: blue; }
+   
+/* ordered and unordered list styles */
+.reveal ul, 
+.reveal ol {font-size: 40px; color: cornflowerblue; list-style-type: square;}
+.small-code pre code {
+  font-size: 1em;
+}
+</style>
+Market Data Analysis Application
+========================================================
+author: Darrel Schwarz
+date: 12th August 2019
+autosize: true
+width: 1600
+height: 1000
+
+Application Link:   <https://darrelschwarz.shinyapps.io/MarketData>
+
+github Link:    <https://github.com/DarrelSchwarz/data-products-shiny/MarketData>
+
+<div align="center">
+   <iframe src="front3.png" scrolling='no' height=900 width=1100></iframe>
+</div>
+
+Application Overview
+========================================================
+
+### The Market Data Application has three parts
+- Main Panel - Timeseries Chart
+
+>The user can select two stocks from a drop down list to compare against the SP500. It then produces a timeseries chart using 'plotly'.   
+
+- Tab 1 - Historical Investment Comparision
+
+>The user can enter an investment amount and a time period.
+The application then works out what your profit/loss would be if you held each of the stocks for the time period.  It also shows the results for holding the SP500 so that you can compare if you were better off investing in the stock or an ETF that is tracking the SP500.
+
+- Tab 2 - Timeseries Data
+
+>Provides an interactive table of timeseries data for the stocks selected in the main panel, for the date period selected (defaults to 7 days).  The returned table can be searched, filtered and sorted.
+
+Note: The market data is sourced from 'yahoo' using the 'quantmod' library.
+
+```{r echo=FALSE,results="hide"}
+library(quantmod)
+library(plotly)
+library(lubridate)
+```
+
+
+Main Panel - Timeseries Chart
+========================================================
+class: small-code
+<span style="font-weight:normal; color:blue;" align="left">
+This code is extracted from the application and shows getting the data for the selected stocks and generating the interactive plot .
+</span>
+```{r echo=TRUE,results="hide",cache=TRUE}
+# to mimic user UI inputs
+input <- list(ticker1="AAPL",ticker2="GOOG")  
+# Getting the data
+tsnames <- c("Date","Ticker","Open","High","Low","Close","Volume","Adjusted")
+getSymbols(c(input$ticker1,input$ticker2,"^GSPC"),src='yahoo',warnings=F)
+dfa <- data.frame(Date=index(get(input$ticker1)), Ticker=input$ticker1, coredata(get(input$ticker1)))
+dfg <- data.frame(Date=index(get(input$ticker2)), Ticker=input$ticker2, coredata(get(input$ticker2)))
+dfs <- data.frame(Date=index(GSPC),Ticker="SP500",coredata(GSPC))
+names(dfa)<-tsnames; names(dfg)<-tsnames; names(dfs)<-tsnames
+dff <- rbind(dfa,dfg,dfs)
+# Plotting the data
+p <- dff %>% plot_ly(type = 'scatter', mode = 'lines') %>%
+     add_trace(x=~Date, y=~Close, name=input$ticker1, line=list(color="green"), data=dff[dff$Ticker==input$ticker1,]) %>%
+     add_trace(x=~Date, y=~Close, name=input$ticker2,line=list(color="lightblue"), data=dff[dff$Ticker==input$ticker2,]) %>%
+     add_trace(x=~Date, y=~Close, name="SP500", yaxis = "y2", line=list(color="lightgreen"), data=dff[dff$Ticker=="SP500",]) %>%
+     layout(title = "Closing Market Prices", xaxis = list(title="Dates"), yaxis = list(title="Stock Price ($US)"), 
+            yaxis2 = list(title="SP500", side="right",overlaying="y"))
+# Required so chart can be included in presenation
+htmlwidgets::saveWidget(as_widget(p), file = "plot1.html")
+```
+<div align="center">
+    <iframe src="plot1.html" height=750 width=1200></iframe>
+<div>
+Tab 1 - Historical Investment Comparison
+========================================================
+<span style="font-weight:normal; color:blue;">
+This code is extracted from the application and returns the comparison table for the select stocks, date period & investment amount.
+</span>
+
+```{r }
+# to mimic user UI inputs
+input <- list(ticker1="AAPL",ticker2="GOOG",
+              dateRange1=c("2007-01-01","2019-08-09"), invest=2000)
+# server code
+tic <- c(input$ticker1,input$ticker2,"SP500")
+wdfs <- dff[dff$Date >=input$dateRange1[1] & dff$Date <=input$dateRange1[2],]
+
+mind <- min(date(wdfs$Date)); maxd <- max(date(wdfs$Date))
+
+wdfs2 <- wdfs[wdfs$Date %in% c(mind,maxd) & wdfs$Ticker %in% tic,]
+
+initc <- wdfs2$Close[wdfs2$Date==mind]
+finalc <- wdfs2$Close[wdfs2$Date==maxd]
+
+initq <- trunc(input$invest/initc,0) # initial quantity
+initv <- round(initq * initc,2)      # initial value
+finalv <- round(initq * finalc,2)    # final value
+prof <- finalv - initv               # profit
+pprof <- round(finalv/initv*100,2)   # profit percentage
+
+wrk <- as.data.frame(list(Ticker=unique(wdfs2$Ticker), Quantity=initq,
+                          InitialValue=initv, CurrentValue=finalv,
+                          Profit=prof, Percentage=pprof)) 
+knitr::kable(wrk,format = "html",row.names=FALSE)
+```
+
+Tab 2 - Time Series Data
+========================================================
+
+## This code is extracted from the application and returns the time series data for the select stocks and date period  
+```{r result="as.is"}
+    # to mimic user UI inputs
+    input <- list(ticker1="AAPL",ticker2="GOOG",
+                  dateRange2=c("2019-08-05","2019-08-09"))
+    # server code
+    wrk <- dff[dff$Date >=input$dateRange2[1] & dff$Date <=input$dateRange2[2] &
+               dff$Ticker %in% c(input$ticker1,input$ticker2,"SP500"),]
+    knitr::kable(wrk,format = "html",row.names=FALSE)
+```
