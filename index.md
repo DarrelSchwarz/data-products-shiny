@@ -26,7 +26,7 @@ height: 1000
 
 Application Link:   <https://darrelschwarz.shinyapps.io/MarketData>
 
-github Link:    <https://github.com/DarrelSchwarz/data-products-shiny/MarketData>
+github Link:    <https://github.com/DarrelSchwarz/data-products-shiny>
 
 <div align="center">
    <img src="front.png" scrolling='no' height=900 width=1100>
