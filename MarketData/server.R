@@ -17,8 +17,11 @@ library(lubridate)
 shinyServer(function(input, output, session) ({
     # Data request and initail processing
     dataset <- reactive({
+        validate(
+            need(input$ticker1!=input$ticker2, "Please select two different stock codes")
+        )
         withProgress(message = 'Getting Data... Please Wait', value = 0, {
-            
+                
             tsnames <- c("Date","Ticker","Open","High","Low","Close","Volume","Adjusted")
             getSymbols(c(input$ticker1,input$ticker2,"^GSPC"),src='yahoo',warnings=F)
             
@@ -43,6 +46,7 @@ shinyServer(function(input, output, session) ({
             rbind(dfa,dfg,dfs)
             
         })
+
     })
     # Timeseries Plot for selected stocks and SP500 
     output$distPlot <- renderPlotly({
